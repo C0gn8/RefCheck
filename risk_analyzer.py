@@ -15,6 +15,15 @@ def calculate_risk(result):
             "No Crossref verification"
         )
 
+    if (
+        result["openalex_score"] < 70
+        and result["crossref_score"] < 70
+    ):
+        risk_score += 30
+        risk_flags.append(
+            "No strong database match"
+        )
+
     confidence = result["confidence"]
 
     if confidence < 60:
@@ -27,6 +36,17 @@ def calculate_risk(result):
         risk_score += 20
         risk_flags.append(
             "Very low confidence match"
+        )
+
+    title_similarity = result.get(
+        "title_similarity",
+        100
+    )
+
+    if title_similarity < 75:
+        risk_score += 20
+        risk_flags.append(
+            "Major title mismatch"
         )
 
     parsed = result["parsed"]
@@ -43,7 +63,10 @@ def calculate_risk(result):
             "Year not detected"
         )
 
-    risk_score = min(risk_score, 100)
+    risk_score = min(
+        risk_score,
+        100
+    )
 
     if risk_score >= 70:
         risk_level = "high"
