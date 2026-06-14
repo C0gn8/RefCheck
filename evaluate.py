@@ -28,6 +28,7 @@ def evaluate_file(filepath):
     total_risk = 0
 
     flagged = []
+    verified_refs = []
 
     for i, reference in enumerate(references, start=1):
 
@@ -49,15 +50,23 @@ def evaluate_file(filepath):
         ]
 
         if status == "verified":
+
             verified += 1
 
+            verified_refs.append(
+                reference
+            )
+
         elif status == "possible_match":
+
             possible += 1
 
         elif status == "weak_match":
+
             weak += 1
 
         elif status == "suspicious":
+
             suspicious += 1
 
         risk_level = result[
@@ -113,7 +122,8 @@ def evaluate_file(filepath):
         "medium_risk": medium_risk,
         "low_risk": low_risk,
         "integrity_score": integrity_score,
-        "flagged": flagged
+        "flagged": flagged,
+        "verified_refs": verified_refs
     }
 
 
@@ -167,6 +177,43 @@ def print_report(report):
     print(
         f"Low Risk: {report['low_risk']}"
     )
+
+    if report["verified_refs"]:
+
+        print()
+        print("=" * 60)
+        print("VERIFIED REFERENCES")
+        print("=" * 60)
+
+        for ref in report["verified_refs"]:
+
+            print()
+            print(ref)
+
+    if report["flagged"]:
+
+        print()
+        print("=" * 60)
+        print("HIGH RISK REFERENCES")
+        print("=" * 60)
+
+        for item in report["flagged"]:
+
+            print()
+            print(
+                f"Reference: {item['reference']}"
+            )
+
+            print(
+                f"Risk Score: {item['risk_score']}"
+            )
+
+            print(
+                "Flags: "
+                + ", ".join(
+                    item["flags"]
+                )
+            )
 
 
 if __name__ == "__main__":
