@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 from verifier import verify_reference
 from parser import parse_reference
+from bibliography_parser import split_references
 
 app = FastAPI(title="RefCheck")
 
@@ -13,6 +14,10 @@ class ReferenceRequest(BaseModel):
 
 class BatchReferenceRequest(BaseModel):
     references: list[str]
+
+
+class BibliographyRequest(BaseModel):
+    text: str
 
 
 @app.get("/")
@@ -63,6 +68,49 @@ def verify_batch(req: BatchReferenceRequest):
 
     return {
         "total": len(req.references),
+        "verified": verified,
+        "possible_matches": possible,
+        "weak_matches": weak,
+        "not_found": not_found,
+        "results": results
+    }
+
+
+@app.post("/verify_text")
+def verify_text(req: BibliographyRequest):
+
+    references = split_references(req.text)
+
+    results = []
+
+    verified = 0
+    possible = 0
+    weak = 0
+    not_found = 0
+
+    for reference in references:
+
+        result = verify_reference(reference)
+
+        results.append({
+            "reference": reference,
+            "result": result
+        })
+
+        if result["status"] == "verified":
+            verified += 1
+
+        elif result["status"] == "possible_match":
+            possible += 1
+
+        elif result["status"] == "weak_match":
+            weak += 1
+
+        elif result["status"] == "not_found":
+            not_found += 1
+
+    return {
+        "total": len(references),
         "verified": verified,
         "possible_matches": possible,
         "weak_matches": weak,
