@@ -1,63 +1,61 @@
-{
-  "total": 3,
-  "verified": 3,
-  "possible_matches": 0,
-  "weak_matches": 0,
-  "not_found": 0,
-  "results": [
-    {
-      "reference": "Bentall RP (2003) Madness Explained",
-      "result": {
-        "status": "verified",
-        "confidence": 96.47,
-        "parsed": {
-          "title": "Madness Explained",
-          "author": "Bentall RP",
-          "year": "2003"
-        },
-        "openalex_found": True,
-        "openalex_score": 96.47,
-        "crossref_found": true,
-        "crossref_score": 88,
-        "matched_title": "Madness Explained: Psychosis and Human Nature",
-        "openalex_id": "https://openalex.org/W1516559478"
-      }
-    },
-    {
-      "reference": "Kuhn TS (1962) The Structure of Scientific Revolutions",
-      "result": {
-        "status": "verified",
-        "confidence": 90,
-        "parsed": {
-          "title": "The Structure of Scientific Revolutions",
-          "author": "Kuhn TS",
-          "year": "1962"
-        },
-        "openalex_found": true,
-        "openalex_score": 84.55,
-        "crossref_found": true,
-        "crossref_score": 90,
-        "matched_title": "The Structure of Scientific Revolutions",
-        "openalex_id": "https://openalex.org/W2752443224"
-      }
-    },
-    {
-      "reference": "Darwin C (1859) On the Origin of Species",
-      "result": {
-        "status": "verified",
-        "confidence": 97.14,
-        "parsed": {
-          "title": "On the Origin of Species",
-          "author": "Darwin C",
-          "year": "1859"
-        },
-        "openalex_found": true,
-        "openalex_score": 97.14,
-        "crossref_found": true,
-        "crossref_score": 80,
-        "matched_title": "On the origin of species by means of natural selection, or, The preservation of favoured races in the struggle for life /",
-        "openalex_id": "https://openalex.org/W2883512297"
-      }
+def calculate_risk(result):
+
+    risk_score = 0
+    risk_flags = []
+
+    if not result["openalex_found"]:
+        risk_score += 25
+        risk_flags.append(
+            "No OpenAlex verification"
+        )
+
+    if not result["crossref_found"]:
+        risk_score += 25
+        risk_flags.append(
+            "No Crossref verification"
+        )
+
+    confidence = result["confidence"]
+
+    if confidence < 60:
+        risk_score += 20
+        risk_flags.append(
+            "Low confidence match"
+        )
+
+    if confidence < 40:
+        risk_score += 20
+        risk_flags.append(
+            "Very low confidence match"
+        )
+
+    parsed = result["parsed"]
+
+    if not parsed.get("author"):
+        risk_score += 10
+        risk_flags.append(
+            "Author not detected"
+        )
+
+    if not parsed.get("year"):
+        risk_score += 10
+        risk_flags.append(
+            "Year not detected"
+        )
+
+    risk_score = min(risk_score, 100)
+
+    if risk_score >= 70:
+        risk_level = "high"
+
+    elif risk_score >= 40:
+        risk_level = "medium"
+
+    else:
+        risk_level = "low"
+
+    return {
+        "risk_score": risk_score,
+        "risk_level": risk_level,
+        "risk_flags": risk_flags
     }
-  ]
-}
