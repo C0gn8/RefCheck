@@ -17,6 +17,21 @@ def parse_reference(reference):
         else None
     )
 
+    if doi:
+        reference = reference.replace(
+            doi,
+            ""
+        )
+
+        reference = reference.replace(
+            "doi:",
+            ""
+        )
+
+        reference = " ".join(
+            reference.split()
+        )
+
     apa_match = re.match(
         r"^(.+?)\s*\((\d{4})\)\.?\s*(.+)$",
         reference
@@ -71,12 +86,6 @@ def parse_reference(reference):
             author = words[-1]
 
     title = reference
-
-    if doi:
-        title = title.replace(
-            doi,
-            ""
-        )
 
     if year:
         title = title.replace(
