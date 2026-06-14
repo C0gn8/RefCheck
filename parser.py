@@ -3,7 +3,7 @@ import re
 
 def parse_reference(reference):
 
-    year_match = re.search(r"\b(19|20)\d{2}\b", reference)
+    year_match = re.search(r"\b(1[5-9]\d{2}|20\d{2}|19\d{2})\b", reference)
 
     year = year_match.group(0) if year_match else None
 
@@ -12,7 +12,12 @@ def parse_reference(reference):
     author = None
 
     if len(words) >= 2:
-        author = words[-2]
+
+        if year and words[-1] == year:
+            author = words[-2]
+
+        else:
+            author = words[-1]
 
     title = reference
 
