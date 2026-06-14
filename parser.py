@@ -3,7 +3,33 @@ import re
 
 def parse_reference(reference):
 
-    year_match = re.search(r"\b(1[5-9]\d{2}|20\d{2}|19\d{2})\b", reference)
+    reference = " ".join(reference.split())
+
+    year_match = re.search(
+        r"\((1[5-9]\d{2}|19\d{2}|20\d{2})\)",
+        reference
+    )
+
+    if year_match:
+
+        year = year_match.group(1)
+
+        before_year = reference[:year_match.start()].strip()
+        after_year = reference[year_match.end():].strip()
+
+        author = before_year
+        title = after_year
+
+        return {
+            "title": title,
+            "author": author,
+            "year": year
+        }
+
+    year_match = re.search(
+        r"\b(1[5-9]\d{2}|19\d{2}|20\d{2})\b",
+        reference
+    )
 
     year = year_match.group(0) if year_match else None
 
