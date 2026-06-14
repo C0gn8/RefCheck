@@ -231,9 +231,10 @@ parsed = parse_reference(
     reference
 )
 
-title_search = parsed.get(
-    "title"
-) or ""
+title_search = (
+    parsed.get("title")
+    or ""
+)
 
 openalex_results = search_openalex(
     title_search
@@ -250,11 +251,9 @@ best_title_similarity = 0
 
 for result in openalex_results:
 
-    score, similarity = (
-        score_openalex(
-            result,
-            parsed
-        )
+    score, similarity = score_openalex(
+        result,
+        parsed
     )
 
     if score > best_openalex_score:
