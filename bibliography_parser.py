@@ -3,47 +3,85 @@ import re
 
 def split_references(text):
 
-    lines = text.splitlines()
+    text = text.replace("\r\n", "\n")
+
+    # Handle numbered bibliographies:
+    # 1.
+    # 2.
+    # 3.
+
+    numbered_refs = re.split(
+        r"\n?\s*(?=\d+\.\s)",
+        text
+    )
+
+    numbered_refs = [
+        ref.strip()
+        for ref in numbered_refs
+        if ref.strip()
+    ]
+
+    if len(numbered_refs) > 1:
+
+        cleaned = []
+
+        for ref in numbered_refs:
+
+            ref = re.sub(
+                r"^\d+\.\s*",
+                "",
+                ref
+            )
+
+            ref = " ".join(
+                ref.split()
+            )
+
+            cleaned.append(ref)
+
+        return cleaned
+
+    # Fallback:
+    # blank-line-separated references
 
     references = []
-    current_reference = []
 
-    for line in lines:
+    current = []
+
+    for line in text.splitlines():
 
         line = line.strip()
 
         if not line:
 
-            if current_reference:
+            if current:
 
                 references.append(
-                    " ".join(current_reference)
+                    " ".join(current)
                 )
 
-                current_reference = []
+                current = []
 
             continue
 
-        current_reference.append(line)
+        current.append(line)
 
-    if current_reference:
+    if current:
 
         references.append(
-            " ".join(current_reference)
+            " ".join(current)
         )
 
     cleaned = []
 
-    for reference in references:
+    for ref in references:
 
-        reference = re.sub(
-            r"\s+",
-            " ",
-            reference
-        ).strip()
+        ref = " ".join(
+            ref.split()
+        )
 
-        if reference:
+        if ref:
 
-            cleaned.append(reference)
+            cleaned.append(ref)
 
     return cleaned
