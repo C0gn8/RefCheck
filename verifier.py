@@ -13,40 +13,73 @@ CROSSREF_URL = "https://api.crossref.org/works"
 
 def search_openalex(title_search):
 
-    r = requests.get(
-        OPENALEX_URL,
-        params={
-            "search": title_search,
-            "per-page": 10
-        },
-        timeout=10
-    )
+    try:
 
-    data = r.json()
+        r = requests.get(
+            OPENALEX_URL,
+            params={
+                "search": title_search,
+                "per-page": 10
+            },
+            timeout=10
+        )
 
-    return data.get("results", [])
+        data = r.json()
+
+        return data.get(
+            "results",
+            []
+        )
+
+    except Exception:
+
+        return []
 
 
-def search_crossref(title_search):
+def search_crossref(title_search, doi=None):
 
-    r = requests.get(
-        CROSSREF_URL,
-        params={
-            "query.title": title_search,
-            "rows": 10
-        },
-        timeout=10
-    )
+    try:
 
-    data = r.json()
+        if doi:
 
-    return data.get(
-        "message",
-        {}
-    ).get(
-        "items",
-        []
-    )
+            r = requests.get(
+                f"{CROSSREF_URL}/{doi}",
+                timeout=10
+            )
+
+            if r.status_code == 200:
+
+                data = r.json()
+
+                item = data.get(
+                    "message",
+                    {}
+                )
+
+                return [item]
+
+        r = requests.get(
+            CROSSREF_URL,
+            params={
+                "query.title": title_search,
+                "rows": 10
+            },
+            timeout=10
+        )
+
+        data = r.json()
+
+        return data.get(
+            "message",
+            {}
+        ).get(
+            "items",
+            []
+        )
+
+    except Exception:
+
+        return []
 
 
 def score_openalex(result, parsed):
@@ -195,7 +228,9 @@ def score_crossref(result, parsed):
 
 def verify_reference(reference):
 
-    parsed = parse_reference(reference)
+    parsed = parse_reference(
+        reference
+    )
 
     title_search = parsed["title"]
 
@@ -204,7 +239,8 @@ def verify_reference(reference):
     )
 
     crossref_results = search_crossref(
-        title_search
+        title_search,
+        parsed.get("doi")
     )
 
     best_openalex = None
@@ -226,6 +262,7 @@ def verify_reference(reference):
             best_title_similarity = (
                 title_similarity
             )
+
             best_openalex = result
 
     best_crossref_score = 0
@@ -271,6 +308,7 @@ def verify_reference(reference):
 
     result = {
         "status": status,
+
         "confidence": round(
             confidence,
             2
@@ -278,13 +316,19 @@ def verify_reference(reference):
 
         "parsed": parsed,
 
+        "doi": parsed.get(
+            "doi"
+        ),
+
         "openalex_found": openalex_found,
+
         "openalex_score": round(
             best_openalex_score,
             2
         ),
 
         "crossref_found": crossref_found,
+
         "crossref_score": round(
             best_crossref_score,
             2
@@ -313,7 +357,9 @@ def verify_reference(reference):
     }
 
     result.update(
-        calculate_risk(result)
+        calculate_risk(
+            result
+        )
     )
 
     return result
