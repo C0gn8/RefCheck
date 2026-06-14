@@ -1,8 +1,12 @@
+print("VERIFIER.PY LOADED")
+
 import requests
 from rapidfuzz import fuzz
 
 
 def verify_reference(reference):
+
+    print("VERIFY_REFERENCE CALLED")
 
     r = requests.get(
         "https://api.openalex.org/works",
