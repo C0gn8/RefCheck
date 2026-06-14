@@ -4,8 +4,10 @@ import requests
 
 app = FastAPI(title="RefCheck")
 
+
 class ReferenceRequest(BaseModel):
     reference: str
+
 
 @app.get("/")
 def root():
@@ -13,6 +15,7 @@ def root():
         "status": "running",
         "project": "RefCheck"
     }
+
 
 @app.post("/verify")
 def verify(req: ReferenceRequest):
