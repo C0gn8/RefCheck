@@ -24,9 +24,7 @@ def search_openalex(title_search):
             timeout=10
         )
 
-        data = r.json()
-
-        return data.get(
+        return r.json().get(
             "results",
             []
         )
@@ -49,9 +47,7 @@ def search_crossref(title_search, doi=None):
 
             if r.status_code == 200:
 
-                data = r.json()
-
-                item = data.get(
+                item = r.json().get(
                     "message",
                     {}
                 )
@@ -67,14 +63,10 @@ def search_crossref(title_search, doi=None):
             timeout=10
         )
 
-        data = r.json()
-
-        return data.get(
-            "message",
-            {}
-        ).get(
-            "items",
-            []
+        return (
+            r.json()
+            .get("message", {})
+            .get("items", [])
         )
 
     except Exception:
@@ -88,9 +80,9 @@ def score_openalex(result, parsed):
     author_search = parsed["author"]
     year_search = parsed["year"]
 
-    candidate_title = result.get(
-        "display_name",
-        ""
+    candidate_title = (
+        result.get("display_name")
+        or ""
     )
 
     title_score = fuzz.partial_ratio(
@@ -110,9 +102,9 @@ def score_openalex(result, parsed):
                 "author",
                 {}
             ).get(
-                "display_name",
-                ""
+                "display_name"
             )
+            or ""
         )
 
         score = fuzz.partial_ratio(
@@ -177,9 +169,9 @@ def score_crossref(result, parsed):
         []
     ):
 
-        family = author.get(
-            "family",
-            ""
+        family = (
+            author.get("family")
+            or ""
         )
 
         score = fuzz.partial_ratio(
@@ -249,7 +241,7 @@ def verify_reference(reference):
 
     for result in openalex_results:
 
-        score, title_similarity = (
+        score, similarity = (
             score_openalex(
                 result,
                 parsed
@@ -259,10 +251,7 @@ def verify_reference(reference):
         if score > best_openalex_score:
 
             best_openalex_score = score
-            best_title_similarity = (
-                title_similarity
-            )
-
+            best_title_similarity = similarity
             best_openalex = result
 
     best_crossref_score = 0
@@ -308,37 +297,26 @@ def verify_reference(reference):
 
     result = {
         "status": status,
-
         "confidence": round(
             confidence,
             2
         ),
-
         "parsed": parsed,
-
-        "doi": parsed.get(
-            "doi"
-        ),
-
+        "doi": parsed.get("doi"),
         "openalex_found": openalex_found,
-
         "openalex_score": round(
             best_openalex_score,
             2
         ),
-
         "crossref_found": crossref_found,
-
         "crossref_score": round(
             best_crossref_score,
             2
         ),
-
         "title_similarity": round(
             best_title_similarity,
             2
         ),
-
         "matched_title": (
             best_openalex.get(
                 "display_name"
@@ -346,20 +324,15 @@ def verify_reference(reference):
             if best_openalex
             else None
         ),
-
         "openalex_id": (
-            best_openalex.get(
-                "id"
-            )
+            best_openalex.get("id")
             if best_openalex
             else None
         )
     }
 
     result.update(
-        calculate_risk(
-            result
-        )
+        calculate_risk(result)
     )
 
     return result
