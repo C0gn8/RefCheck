@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from verifier import verify_reference
 from parser import parse_reference
 from bibliography_parser import split_references
+from audit import generate_audit
 
 app = FastAPI(title="RefCheck")
 
@@ -43,37 +44,14 @@ def verify_batch(req: BatchReferenceRequest):
 
     results = []
 
-    verified = 0
-    possible = 0
-    weak = 0
-    not_found = 0
-
     for reference in req.references:
 
-        result = verify_reference(reference)
+        results.append({
+            "reference": reference,
+            "result": verify_reference(reference)
+        })
 
-        results.append(result)
-
-        if result["status"] == "verified":
-            verified += 1
-
-        elif result["status"] == "possible_match":
-            possible += 1
-
-        elif result["status"] == "weak_match":
-            weak += 1
-
-        elif result["status"] == "not_found":
-            not_found += 1
-
-    return {
-        "total": len(req.references),
-        "verified": verified,
-        "possible_matches": possible,
-        "weak_matches": weak,
-        "not_found": not_found,
-        "results": results
-    }
+    return generate_audit(results)
 
 
 @app.post("/verify_text")
@@ -83,37 +61,31 @@ def verify_text(req: BibliographyRequest):
 
     results = []
 
-    verified = 0
-    possible = 0
-    weak = 0
-    not_found = 0
-
     for reference in references:
-
-        result = verify_reference(reference)
 
         results.append({
             "reference": reference,
-            "result": result
+            "result": verify_reference(reference)
         })
 
-        if result["status"] == "verified":
-            verified += 1
-
-        elif result["status"] == "possible_match":
-            possible += 1
-
-        elif result["status"] == "weak_match":
-            weak += 1
-
-        elif result["status"] == "not_found":
-            not_found += 1
-
     return {
-        "total": len(references),
-        "verified": verified,
-        "possible_matches": possible,
-        "weak_matches": weak,
-        "not_found": not_found,
-        "results": results
+        "references": results,
+        "audit": generate_audit(results)
     }
+
+
+@app.post("/audit")
+def audit(req: BibliographyRequest):
+
+    references = split_references(req.text)
+
+    results = []
+
+    for reference in references:
+
+        results.append({
+            "reference": reference,
+            "result": verify_reference(reference)
+        })
+
+    return generate_audit(results)
