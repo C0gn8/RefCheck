@@ -1,14 +1,15 @@
 import re
 
+
 def parse_reference(reference):
 
     year_match = re.search(r"\b(19|20)\d{2}\b", reference)
 
     year = year_match.group(0) if year_match else None
 
-    author = None
-
     words = reference.split()
+
+    author = None
 
     if len(words) >= 2:
         author = words[-2]
@@ -21,7 +22,7 @@ def parse_reference(reference):
     if author:
         title = title.replace(author, "")
 
-    title = title.strip()
+    title = " ".join(title.split())
 
     return {
         "title": title,
