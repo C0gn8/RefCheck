@@ -15,7 +15,7 @@
           "author": "Bentall RP",
           "year": "2003"
         },
-        "openalex_found": true,
+        "openalex_found": True,
         "openalex_score": 96.47,
         "crossref_found": true,
         "crossref_score": 88,
