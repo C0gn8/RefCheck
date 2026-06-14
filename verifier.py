@@ -5,18 +5,14 @@ from rapidfuzz import fuzz
 from parser import parse_reference
 
 
-def verify_reference(reference):
+OPENALEX_URL = "https://api.openalex.org/works"
+CROSSREF_URL = "https://api.crossref.org/works"
 
-    print("VERIFY_REFERENCE CALLED")
 
-    parsed = parse_reference(reference)
-
-    title_search = parsed["title"]
-    author_search = parsed["author"]
-    year_search = parsed["year"]
+def search_openalex(title_search):
 
     r = requests.get(
-        "https://api.openalex.org/works",
+        OPENALEX_URL,
         params={
             "search": title_search,
             "per-page": 10
@@ -26,80 +22,197 @@ def verify_reference(reference):
 
     data = r.json()
 
-    if not data.get("results"):
-        return {
-            "status": "not_found",
-            "parsed": parsed
-        }
+    return data.get("results", [])
 
-    best_match = None
-    best_confidence = 0
 
-    for result in data["results"]:
+def search_crossref(title_search):
 
-        candidate_title = result.get("display_name", "")
+    r = requests.get(
+        CROSSREF_URL,
+        params={
+            "query.title": title_search,
+            "rows": 10
+        },
+        timeout=10
+    )
 
-        title_score = fuzz.partial_ratio(
-            title_search.lower(),
-            candidate_title.lower()
-        )
+    data = r.json()
 
-        author_score = 0
+    return data.get("message", {}).get("items", [])
 
-        authorships = result.get("authorships", [])
 
-        if author_search and authorships:
+def score_openalex(result, parsed):
 
-            author_names = [
-                a.get("author", {}).get("display_name", "")
-                for a in authorships
-            ]
+    title_search = parsed["title"]
+    author_search = parsed["author"]
+    year_search = parsed["year"]
 
-            best_author_score = 0
+    candidate_title = result.get("display_name", "")
 
-            for name in author_names:
+    title_score = fuzz.partial_ratio(
+        title_search.lower(),
+        candidate_title.lower()
+    )
 
-                score = fuzz.partial_ratio(
-                    author_search.lower(),
-                    name.lower()
-                )
+    author_score = 0
 
-                if score > best_author_score:
-                    best_author_score = score
+    authorships = result.get("authorships", [])
 
-            author_score = best_author_score
+    if author_search and authorships:
 
-        year_score = 0
+        for author in authorships:
 
-        publication_year = result.get("publication_year")
+            author_name = (
+                author.get("author", {})
+                .get("display_name", "")
+            )
 
-        if year_search and publication_year:
+            score = fuzz.partial_ratio(
+                author_search.lower(),
+                author_name.lower()
+            )
 
-            if str(publication_year) == str(year_search):
-                year_score = 100
+            author_score = max(author_score, score)
 
-        confidence = (
-            title_score * 0.7 +
-            author_score * 0.2 +
-            year_score * 0.1
-        )
+    year_score = 0
 
-        if confidence > best_confidence:
-            best_confidence = confidence
-            best_match = result
+    publication_year = result.get("publication_year")
 
-    if best_confidence >= 85:
+    if year_search and publication_year:
+
+        if str(year_search) == str(publication_year):
+            year_score = 100
+
+    confidence = (
+        title_score * 0.7 +
+        author_score * 0.2 +
+        year_score * 0.1
+    )
+
+    return confidence
+
+
+def score_crossref(result, parsed):
+
+    title_search = parsed["title"]
+    author_search = parsed["author"]
+    year_search = parsed["year"]
+
+    title_list = result.get("title", [])
+
+    candidate_title = title_list[0] if title_list else ""
+
+    title_score = fuzz.partial_ratio(
+        title_search.lower(),
+        candidate_title.lower()
+    )
+
+    author_score = 0
+
+    authors = result.get("author", [])
+
+    if author_search:
+
+        for author in authors:
+
+            family = author.get("family", "")
+
+            score = fuzz.partial_ratio(
+                author_search.lower(),
+                family.lower()
+            )
+
+            author_score = max(author_score, score)
+
+    year_score = 0
+
+    issued = result.get("issued", {})
+
+    date_parts = issued.get("date-parts", [])
+
+    if date_parts and date_parts[0]:
+
+        publication_year = str(date_parts[0][0])
+
+        if year_search and publication_year == str(year_search):
+            year_score = 100
+
+    confidence = (
+        title_score * 0.7 +
+        author_score * 0.2 +
+        year_score * 0.1
+    )
+
+    return confidence
+
+
+def verify_reference(reference):
+
+    parsed = parse_reference(reference)
+
+    title_search = parsed["title"]
+
+    openalex_results = search_openalex(title_search)
+    crossref_results = search_crossref(title_search)
+
+    best_openalex = None
+    best_openalex_score = 0
+
+    for result in openalex_results:
+
+        score = score_openalex(result, parsed)
+
+        if score > best_openalex_score:
+            best_openalex_score = score
+            best_openalex = result
+
+    best_crossref = None
+    best_crossref_score = 0
+
+    for result in crossref_results:
+
+        score = score_crossref(result, parsed)
+
+        if score > best_crossref_score:
+            best_crossref_score = score
+            best_crossref = result
+
+    confidence = max(
+        best_openalex_score,
+        best_crossref_score
+    )
+
+    openalex_found = best_openalex_score >= 70
+    crossref_found = best_crossref_score >= 70
+
+    if confidence >= 85:
         status = "verified"
-    elif best_confidence >= 60:
+    elif confidence >= 60:
         status = "possible_match"
     else:
         status = "weak_match"
 
     return {
         "status": status,
-        "confidence": round(best_confidence, 2),
+        "confidence": round(confidence, 2),
+
         "parsed": parsed,
-        "matched_title": best_match.get("display_name"),
-        "matched_year": best_match.get("publication_year"),
-        "openalex_id": best_match.get("id")
+
+        "openalex_found": openalex_found,
+        "openalex_score": round(best_openalex_score, 2),
+
+        "crossref_found": crossref_found,
+        "crossref_score": round(best_crossref_score, 2),
+
+        "matched_title": (
+            best_openalex.get("display_name")
+            if best_openalex
+            else None
+        ),
+
+        "openalex_id": (
+            best_openalex.get("id")
+            if best_openalex
+            else None
+        )
     }
