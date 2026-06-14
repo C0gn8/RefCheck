@@ -20,7 +20,7 @@ def search_openalex(title_search):
                 "search": title_search,
                 "per-page": 10
             },
-            timeout=10
+            timeout=3
         )
 
         data = r.json()
@@ -43,7 +43,7 @@ def search_crossref(title_search, doi=None):
 
             r = requests.get(
                 f"{CROSSREF_URL}/{doi}",
-                timeout=10
+                timeout=3
             )
 
             if r.status_code == 200:
@@ -63,7 +63,7 @@ def search_crossref(title_search, doi=None):
                 "query.title": title_search,
                 "rows": 10
             },
-            timeout=10
+            timeout=3
         )
 
         data = r.json()
@@ -311,37 +311,21 @@ def verify_reference(reference):
 
     result = {
         "status": status,
-        "confidence": round(
-            confidence,
-            2
-        ),
+        "confidence": round(confidence, 2),
         "parsed": parsed,
         "doi": parsed.get("doi"),
         "openalex_found": openalex_found,
-        "openalex_score": round(
-            best_openalex_score,
-            2
-        ),
+        "openalex_score": round(best_openalex_score, 2),
         "crossref_found": crossref_found,
-        "crossref_score": round(
-            best_crossref_score,
-            2
-        ),
-        "title_similarity": round(
-            best_title_similarity,
-            2
-        ),
+        "crossref_score": round(best_crossref_score, 2),
+        "title_similarity": round(best_title_similarity, 2),
         "matched_title": (
-            best_openalex.get(
-                "display_name"
-            )
+            best_openalex.get("display_name")
             if best_openalex
             else None
         ),
         "openalex_id": (
-            best_openalex.get(
-                "id"
-            )
+            best_openalex.get("id")
             if best_openalex
             else None
         )
