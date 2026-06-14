@@ -2,17 +2,22 @@ print("VERIFIER.PY LOADED")
 
 import requests
 from rapidfuzz import fuzz
+from parser import parse_reference
 
 
 def verify_reference(reference):
 
     print("VERIFY_REFERENCE CALLED")
 
+    parsed = parse_reference(reference)
+
+    title_search = parsed["title"]
+
     r = requests.get(
         "https://api.openalex.org/works",
         params={
-            "search": reference,
-            "per-page": 5
+            "search": title_search,
+            "per-page": 10
         },
         timeout=10
     )
@@ -21,7 +26,8 @@ def verify_reference(reference):
 
     if not data.get("results"):
         return {
-            "status": "not_found"
+            "status": "not_found",
+            "parsed": parsed
         }
 
     best_match = None
@@ -29,27 +35,28 @@ def verify_reference(reference):
 
     for result in data["results"]:
 
-        title = result.get("display_name", "")
+        candidate_title = result.get("display_name", "")
 
-        score = fuzz.partial_ratio(
-            reference.lower(),
-            title.lower()
+        score = fuzz.ratio(
+            title_search.lower(),
+            candidate_title.lower()
         )
 
         if score > best_score:
             best_score = score
             best_match = result
 
-    if best_score >= 80:
+    if best_score >= 90:
         status = "verified"
-    elif best_score >= 50:
+    elif best_score >= 70:
         status = "possible_match"
     else:
         status = "weak_match"
 
     return {
         "status": status,
-        "confidence": best_score,
+        "confidence": round(best_score, 2),
+        "parsed": parsed,
         "matched_title": best_match.get("display_name"),
         "openalex_id": best_match.get("id")
     }
