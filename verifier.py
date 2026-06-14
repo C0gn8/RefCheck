@@ -40,7 +40,13 @@ def search_crossref(title_search):
 
     data = r.json()
 
-    return data.get("message", {}).get("items", [])
+    return data.get(
+        "message",
+        {}
+    ).get(
+        "items",
+        []
+    )
 
 
 def score_openalex(result, parsed):
@@ -49,7 +55,10 @@ def score_openalex(result, parsed):
     author_search = parsed["author"]
     year_search = parsed["year"]
 
-    candidate_title = result.get("display_name", "")
+    candidate_title = result.get(
+        "display_name",
+        ""
+    )
 
     title_score = fuzz.partial_ratio(
         title_search.lower(),
@@ -58,26 +67,30 @@ def score_openalex(result, parsed):
 
     author_score = 0
 
-    authorships = result.get("authorships", [])
+    for author in result.get(
+        "authorships",
+        []
+    ):
 
-    if author_search:
-
-        for author in authorships:
-
-            author_name = (
-                author.get("author", {})
-                .get("display_name", "")
+        author_name = (
+            author.get(
+                "author",
+                {}
+            ).get(
+                "display_name",
+                ""
             )
+        )
 
-            score = fuzz.partial_ratio(
-                author_search.lower(),
-                author_name.lower()
-            )
+        score = fuzz.partial_ratio(
+            author_search.lower(),
+            author_name.lower()
+        )
 
-            author_score = max(
-                author_score,
-                score
-            )
+        author_score = max(
+            author_score,
+            score
+        )
 
     year_score = 0
 
@@ -85,18 +98,21 @@ def score_openalex(result, parsed):
         "publication_year"
     )
 
-    if year_search and publication_year:
-
-        if str(year_search) == str(publication_year):
-            year_score = 100
+    if (
+        year_search
+        and publication_year
+        and str(year_search)
+        == str(publication_year)
+    ):
+        year_score = 100
 
     confidence = (
-        title_score * 0.7 +
-        author_score * 0.2 +
-        year_score * 0.1
+        title_score * 0.7
+        + author_score * 0.2
+        + year_score * 0.1
     )
 
-    return confidence
+    return confidence, title_score
 
 
 def score_crossref(result, parsed):
@@ -105,7 +121,10 @@ def score_crossref(result, parsed):
     author_search = parsed["author"]
     year_search = parsed["year"]
 
-    title_list = result.get("title", [])
+    title_list = result.get(
+        "title",
+        []
+    )
 
     candidate_title = (
         title_list[0]
@@ -160,17 +179,18 @@ def score_crossref(result, parsed):
 
         if (
             year_search
-            and publication_year == str(year_search)
+            and publication_year
+            == str(year_search)
         ):
             year_score = 100
 
     confidence = (
-        title_score * 0.7 +
-        author_score * 0.2 +
-        year_score * 0.1
+        title_score * 0.7
+        + author_score * 0.2
+        + year_score * 0.1
     )
 
-    return confidence
+    return confidence, title_score
 
 
 def verify_reference(reference):
@@ -189,25 +209,30 @@ def verify_reference(reference):
 
     best_openalex = None
     best_openalex_score = 0
+    best_title_similarity = 0
 
     for result in openalex_results:
 
-        score = score_openalex(
-            result,
-            parsed
+        score, title_similarity = (
+            score_openalex(
+                result,
+                parsed
+            )
         )
 
         if score > best_openalex_score:
 
             best_openalex_score = score
+            best_title_similarity = (
+                title_similarity
+            )
             best_openalex = result
 
-    best_crossref = None
     best_crossref_score = 0
 
     for result in crossref_results:
 
-        score = score_crossref(
+        score, _ = score_crossref(
             result,
             parsed
         )
@@ -215,7 +240,6 @@ def verify_reference(reference):
         if score > best_crossref_score:
 
             best_crossref_score = score
-            best_crossref = result
 
     confidence = max(
         best_openalex_score,
@@ -230,7 +254,13 @@ def verify_reference(reference):
         best_crossref_score >= 70
     )
 
-    if confidence >= 85:
+    if (
+        best_openalex_score < 70
+        and best_crossref_score < 70
+    ):
+        status = "suspicious"
+
+    elif confidence >= 85:
         status = "verified"
 
     elif confidence >= 60:
@@ -260,6 +290,11 @@ def verify_reference(reference):
             2
         ),
 
+        "title_similarity": round(
+            best_title_similarity,
+            2
+        ),
+
         "matched_title": (
             best_openalex.get(
                 "display_name"
@@ -269,14 +304,16 @@ def verify_reference(reference):
         ),
 
         "openalex_id": (
-            best_openalex.get("id")
+            best_openalex.get(
+                "id"
+            )
             if best_openalex
             else None
         )
     }
 
-    risk = calculate_risk(result)
-
-    result.update(risk)
+    result.update(
+        calculate_risk(result)
+    )
 
     return result
