@@ -5,54 +5,41 @@ def split_references(text):
 
     text = text.replace("\r\n", "\n")
 
-    # Handle numbered bibliographies:
-    # 1.
-    # 2.
-    # 3.
-
-    numbered_refs = re.split(
-        r"\n?\s*(?=\d+\.\s)",
-        text
-    )
-
-    numbered_refs = [
-        ref.strip()
-        for ref in numbered_refs
-        if ref.strip()
+    lines = [
+        line.strip()
+        for line in text.split("\n")
+        if line.strip()
     ]
 
-    if len(numbered_refs) > 1:
-
-        cleaned = []
-
-        for ref in numbered_refs:
-
-            ref = re.sub(
-                r"^\d+\.\s*",
-                "",
-                ref
-            )
-
-            ref = " ".join(
-                ref.split()
-            )
-
-            cleaned.append(ref)
-
-        return cleaned
-
-    # Fallback:
-    # blank-line-separated references
-
     references = []
-
     current = []
 
-    for line in text.splitlines():
+    for line in lines:
 
-        line = line.strip()
+        # Numbered styles:
+        #
+        # 1. Author...
+        # [1] Author...
+        #
 
-        if not line:
+        starts_new = (
+            re.match(r"^\d+\.", line)
+            or re.match(r"^\[\d+\]", line)
+        )
+
+        # Author-year styles:
+        #
+        # Smith J (2020)
+        # Brown A. (2018)
+        #
+
+        if re.match(
+            r"^[A-Z][A-Za-z' -]+.*\(\d{4}\)",
+            line
+        ):
+            starts_new = True
+
+        if starts_new:
 
             if current:
 
@@ -60,11 +47,11 @@ def split_references(text):
                     " ".join(current)
                 )
 
-                current = []
+            current = [line]
 
-            continue
+        else:
 
-        current.append(line)
+            current.append(line)
 
     if current:
 
@@ -75,6 +62,18 @@ def split_references(text):
     cleaned = []
 
     for ref in references:
+
+        ref = re.sub(
+            r"^\d+\.\s*",
+            "",
+            ref
+        )
+
+        ref = re.sub(
+            r"^\[\d+\]\s*",
+            "",
+            ref
+        )
 
         ref = " ".join(
             ref.split()
