@@ -2,7 +2,9 @@ print("VERIFIER.PY LOADED")
 
 import requests
 from rapidfuzz import fuzz
+
 from parser import parse_reference
+from risk_analyzer import calculate_risk
 
 
 OPENALEX_URL = "https://api.openalex.org/works"
@@ -58,7 +60,7 @@ def score_openalex(result, parsed):
 
     authorships = result.get("authorships", [])
 
-    if author_search and authorships:
+    if author_search:
 
         for author in authorships:
 
@@ -72,11 +74,16 @@ def score_openalex(result, parsed):
                 author_name.lower()
             )
 
-            author_score = max(author_score, score)
+            author_score = max(
+                author_score,
+                score
+            )
 
     year_score = 0
 
-    publication_year = result.get("publication_year")
+    publication_year = result.get(
+        "publication_year"
+    )
 
     if year_search and publication_year:
 
@@ -100,7 +107,11 @@ def score_crossref(result, parsed):
 
     title_list = result.get("title", [])
 
-    candidate_title = title_list[0] if title_list else ""
+    candidate_title = (
+        title_list[0]
+        if title_list
+        else ""
+    )
 
     title_score = fuzz.partial_ratio(
         title_search.lower(),
@@ -109,32 +120,48 @@ def score_crossref(result, parsed):
 
     author_score = 0
 
-    authors = result.get("author", [])
+    for author in result.get(
+        "author",
+        []
+    ):
 
-    if author_search:
+        family = author.get(
+            "family",
+            ""
+        )
 
-        for author in authors:
+        score = fuzz.partial_ratio(
+            author_search.lower(),
+            family.lower()
+        )
 
-            family = author.get("family", "")
-
-            score = fuzz.partial_ratio(
-                author_search.lower(),
-                family.lower()
-            )
-
-            author_score = max(author_score, score)
+        author_score = max(
+            author_score,
+            score
+        )
 
     year_score = 0
 
-    issued = result.get("issued", {})
+    issued = result.get(
+        "issued",
+        {}
+    )
 
-    date_parts = issued.get("date-parts", [])
+    date_parts = issued.get(
+        "date-parts",
+        []
+    )
 
     if date_parts and date_parts[0]:
 
-        publication_year = str(date_parts[0][0])
+        publication_year = str(
+            date_parts[0][0]
+        )
 
-        if year_search and publication_year == str(year_search):
+        if (
+            year_search
+            and publication_year == str(year_search)
+        ):
             year_score = 100
 
     confidence = (
@@ -152,17 +179,26 @@ def verify_reference(reference):
 
     title_search = parsed["title"]
 
-    openalex_results = search_openalex(title_search)
-    crossref_results = search_crossref(title_search)
+    openalex_results = search_openalex(
+        title_search
+    )
+
+    crossref_results = search_crossref(
+        title_search
+    )
 
     best_openalex = None
     best_openalex_score = 0
 
     for result in openalex_results:
 
-        score = score_openalex(result, parsed)
+        score = score_openalex(
+            result,
+            parsed
+        )
 
         if score > best_openalex_score:
+
             best_openalex_score = score
             best_openalex = result
 
@@ -171,9 +207,13 @@ def verify_reference(reference):
 
     for result in crossref_results:
 
-        score = score_crossref(result, parsed)
+        score = score_crossref(
+            result,
+            parsed
+        )
 
         if score > best_crossref_score:
+
             best_crossref_score = score
             best_crossref = result
 
@@ -182,30 +222,48 @@ def verify_reference(reference):
         best_crossref_score
     )
 
-    openalex_found = best_openalex_score >= 70
-    crossref_found = best_crossref_score >= 70
+    openalex_found = (
+        best_openalex_score >= 70
+    )
+
+    crossref_found = (
+        best_crossref_score >= 70
+    )
 
     if confidence >= 85:
         status = "verified"
+
     elif confidence >= 60:
         status = "possible_match"
+
     else:
         status = "weak_match"
 
-    return {
+    result = {
         "status": status,
-        "confidence": round(confidence, 2),
+        "confidence": round(
+            confidence,
+            2
+        ),
 
         "parsed": parsed,
 
         "openalex_found": openalex_found,
-        "openalex_score": round(best_openalex_score, 2),
+        "openalex_score": round(
+            best_openalex_score,
+            2
+        ),
 
         "crossref_found": crossref_found,
-        "crossref_score": round(best_crossref_score, 2),
+        "crossref_score": round(
+            best_crossref_score,
+            2
+        ),
 
         "matched_title": (
-            best_openalex.get("display_name")
+            best_openalex.get(
+                "display_name"
+            )
             if best_openalex
             else None
         ),
@@ -216,3 +274,9 @@ def verify_reference(reference):
             else None
         )
     }
+
+    risk = calculate_risk(result)
+
+    result.update(risk)
+
+    return result
