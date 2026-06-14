@@ -5,8 +5,17 @@ def parse_reference(reference):
 
     reference = " ".join(reference.split())
 
-    # APA / Harvard style:
-    # Bentall, R. P. (2003). Madness Explained.
+    doi_match = re.search(
+        r"(10\.\d{4,9}/[-._;()/:A-Z0-9]+)",
+        reference,
+        re.IGNORECASE
+    )
+
+    doi = (
+        doi_match.group(1)
+        if doi_match
+        else None
+    )
 
     apa_match = re.match(
         r"^(.+?)\s*\((\d{4})\)\.?\s*(.+)$",
@@ -32,10 +41,9 @@ def parse_reference(reference):
         return {
             "title": title,
             "author": author,
-            "year": year
+            "year": year,
+            "doi": doi
         }
-
-    # General year detection
 
     year_match = re.search(
         r"\b(1[5-9]\d{2}|19\d{2}|20\d{2})\b",
@@ -64,6 +72,12 @@ def parse_reference(reference):
 
     title = reference
 
+    if doi:
+        title = title.replace(
+            doi,
+            ""
+        )
+
     if year:
         title = title.replace(
             year,
@@ -85,5 +99,6 @@ def parse_reference(reference):
     return {
         "title": title,
         "author": author,
-        "year": year
+        "year": year,
+        "doi": doi
     }
