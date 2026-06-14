@@ -23,7 +23,9 @@ try:
         timeout=10
     )
 
-    return r.json().get(
+    data = r.json()
+
+    return data.get(
         "results",
         []
     )
@@ -47,7 +49,9 @@ try:
 
         if r.status_code == 200:
 
-            item = r.json().get(
+            data = r.json()
+
+            item = data.get(
                 "message",
                 {}
             )
@@ -63,10 +67,16 @@ try:
         timeout=10
     )
 
+    data = r.json()
+
     return (
-        r.json()
-        .get("message", {})
-        .get("items", [])
+        data.get(
+            "message",
+            {}
+        ).get(
+            "items",
+            []
+        )
     )
 
 except Exception:
@@ -77,12 +87,24 @@ except Exception:
 def score_openalex(result, parsed):
 
 ```
-title_search = parsed.get("title") or ""
-author_search = parsed.get("author") or ""
-year_search = parsed.get("year")
+title_search = (
+    parsed.get("title")
+    or ""
+)
+
+author_search = (
+    parsed.get("author")
+    or ""
+)
+
+year_search = parsed.get(
+    "year"
+)
 
 candidate_title = (
-    result.get("display_name")
+    result.get(
+        "display_name"
+    )
     or ""
 )
 
@@ -140,15 +162,28 @@ confidence = (
     + year_score * 0.1
 )
 
-return confidence, title_score
+return (
+    confidence,
+    title_score
+)
 ```
 
 def score_crossref(result, parsed):
 
 ```
-title_search = parsed.get("title") or ""
-author_search = parsed.get("author") or ""
-year_search = parsed.get("year")
+title_search = (
+    parsed.get("title")
+    or ""
+)
+
+author_search = (
+    parsed.get("author")
+    or ""
+)
+
+year_search = parsed.get(
+    "year"
+)
 
 title_list = result.get(
     "title",
@@ -176,7 +211,9 @@ if author_search:
     ):
 
         family = (
-            author.get("family")
+            author.get(
+                "family"
+            )
             or ""
         )
 
@@ -202,7 +239,10 @@ date_parts = issued.get(
     []
 )
 
-if date_parts and date_parts[0]:
+if (
+    date_parts
+    and date_parts[0]
+):
 
     publication_year = str(
         date_parts[0][0]
@@ -221,7 +261,10 @@ confidence = (
     + year_score * 0.1
 )
 
-return confidence, title_score
+return (
+    confidence,
+    title_score
+)
 ```
 
 def verify_reference(reference):
@@ -305,26 +348,37 @@ else:
 
 result = {
     "status": status,
+
     "confidence": round(
         confidence,
         2
     ),
+
     "parsed": parsed,
-    "doi": parsed.get("doi"),
+
+    "doi": parsed.get(
+        "doi"
+    ),
+
     "openalex_found": openalex_found,
+
     "openalex_score": round(
         best_openalex_score,
         2
     ),
+
     "crossref_found": crossref_found,
+
     "crossref_score": round(
         best_crossref_score,
         2
     ),
+
     "title_similarity": round(
         best_title_similarity,
         2
     ),
+
     "matched_title": (
         best_openalex.get(
             "display_name"
@@ -332,6 +386,7 @@ result = {
         if best_openalex
         else None
     ),
+
     "openalex_id": (
         best_openalex.get(
             "id"
@@ -342,7 +397,9 @@ result = {
 }
 
 result.update(
-    calculate_risk(result)
+    calculate_risk(
+        result
+    )
 )
 
 return result
