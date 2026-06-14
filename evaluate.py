@@ -12,6 +12,10 @@ def evaluate_file(filepath):
 
     references = split_references(text)
 
+    print()
+    print(f"Processing: {filepath}")
+    print(f"Found {len(references)} references")
+
     verified = 0
     possible = 0
     weak = 0
@@ -25,7 +29,12 @@ def evaluate_file(filepath):
 
     flagged = []
 
-    for reference in references:
+    for i, reference in enumerate(references, start=1):
+
+        print(
+            f"Checking {i}/{len(references)}",
+            end="\r"
+        )
 
         result = verify_reference(
             reference
@@ -70,9 +79,11 @@ def evaluate_file(filepath):
             })
 
         elif risk_level == "medium":
+
             medium_risk += 1
 
         else:
+
             low_risk += 1
 
     total = len(references)
@@ -140,8 +151,7 @@ def print_report(report):
     print()
 
     print(
-        f"Integrity Score: "
-        f"{report['integrity_score']}"
+        f"Integrity Score: {report['integrity_score']}"
     )
 
     print()
@@ -158,40 +168,12 @@ def print_report(report):
         f"Low Risk: {report['low_risk']}"
     )
 
-    if report["flagged"]:
-
-        print()
-        print("FLAGGED REFERENCES")
-
-        for item in report[
-            "flagged"
-        ]:
-
-            print()
-
-            print(
-                f"- {item['reference']}"
-            )
-
-            print(
-                f"  Risk: "
-                f"{item['risk_score']}"
-            )
-
-            print(
-                f"  Flags: "
-                f"{', '.join(item['flags'])}"
-            )
-
 
 if __name__ == "__main__":
 
     files = [
-
         "test_data/real_bibliography.txt",
-
         "test_data/mixed_bibliography.txt",
-
         "test_data/fake_bibliography.txt"
     ]
 
@@ -208,8 +190,6 @@ if __name__ == "__main__":
             )
 
         else:
-
-            print()
 
             print(
                 f"Missing: {filepath}"
