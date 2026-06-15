@@ -5,6 +5,7 @@ from rapidfuzz import fuzz
 
 from parser import parse_reference
 from risk_analyzer import calculate_risk
+from grey_literature import is_grey_literature
 
 OPENALEX_URL = "https://api.openalex.org/works"
 CROSSREF_URL = "https://api.crossref.org/works"
@@ -50,12 +51,12 @@ def search_crossref(title_search, doi=None):
 
                 data = r.json()
 
-                item = data.get(
-                    "message",
-                    {}
-                )
-
-                return [item]
+                return [
+                    data.get(
+                        "message",
+                        {}
+                    )
+                ]
 
         r = requests.get(
             CROSSREF_URL,
@@ -294,13 +295,28 @@ def verify_reference(reference):
         best_crossref_score >= 70
     )
 
-    if (
+    grey_literature = is_grey_literature(
+        reference
+    )
+
+    if grey_literature:
+
+        status = "grey_literature"
+
+    elif (
         best_openalex_score < 70
         and best_crossref_score < 70
     ):
         status = "suspicious"
 
-    elif confidence >= 85:
+    elif (
+        confidence >= 85
+        and best_title_similarity >= 85
+        and (
+            openalex_found
+            or crossref_found
+        )
+    ):
         status = "verified"
 
     elif confidence >= 60:
@@ -311,21 +327,37 @@ def verify_reference(reference):
 
     result = {
         "status": status,
-        "confidence": round(confidence, 2),
+        "confidence": round(
+            confidence,
+            2
+        ),
         "parsed": parsed,
         "doi": parsed.get("doi"),
         "openalex_found": openalex_found,
-        "openalex_score": round(best_openalex_score, 2),
+        "openalex_score": round(
+            best_openalex_score,
+            2
+        ),
         "crossref_found": crossref_found,
-        "crossref_score": round(best_crossref_score, 2),
-        "title_similarity": round(best_title_similarity, 2),
+        "crossref_score": round(
+            best_crossref_score,
+            2
+        ),
+        "title_similarity": round(
+            best_title_similarity,
+            2
+        ),
         "matched_title": (
-            best_openalex.get("display_name")
+            best_openalex.get(
+                "display_name"
+            )
             if best_openalex
             else None
         ),
         "openalex_id": (
-            best_openalex.get("id")
+            best_openalex.get(
+                "id"
+            )
             if best_openalex
             else None
         )
