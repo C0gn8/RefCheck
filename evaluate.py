@@ -29,7 +29,9 @@ def evaluate_file(filepath):
     total_risk = 0
 
     flagged = []
+
     verified_refs = []
+    possible_refs = []
 
     for i, reference in enumerate(references, start=1):
 
@@ -53,13 +55,20 @@ def evaluate_file(filepath):
         if status == "verified":
 
             verified += 1
-            verified_refs.append(
-                reference
-            )
+
+            verified_refs.append({
+                "reference": reference,
+                "result": result
+            })
 
         elif status == "possible_match":
 
             possible += 1
+
+            possible_refs.append({
+                "reference": reference,
+                "result": result
+            })
 
         elif status == "weak_match":
 
@@ -128,7 +137,8 @@ def evaluate_file(filepath):
         "low_risk": low_risk,
         "integrity_score": integrity_score,
         "flagged": flagged,
-        "verified_refs": verified_refs
+        "verified_refs": verified_refs,
+        "possible_refs": possible_refs
     }
 
 
@@ -163,10 +173,67 @@ def print_report(report):
         print("VERIFIED REFERENCES")
         print("=" * 60)
 
-        for ref in report["verified_refs"]:
+        for item in report["verified_refs"]:
 
             print()
-            print(ref)
+            print(item["reference"])
+
+            print(
+                f"Confidence: "
+                f"{item['result']['confidence']}"
+            )
+
+            print(
+                f"Title similarity: "
+                f"{item['result']['title_similarity']}"
+            )
+
+            print(
+                f"OpenAlex: "
+                f"{item['result']['openalex_score']}"
+            )
+
+            print(
+                f"Crossref: "
+                f"{item['result']['crossref_score']}"
+            )
+
+    if report["possible_refs"]:
+
+        print()
+        print("=" * 60)
+        print("POSSIBLE MATCHES")
+        print("=" * 60)
+
+        for item in report["possible_refs"][:10]:
+
+            print()
+            print(item["reference"])
+
+            print(
+                f"Confidence: "
+                f"{item['result']['confidence']}"
+            )
+
+            print(
+                f"Title similarity: "
+                f"{item['result']['title_similarity']}"
+            )
+
+            print(
+                f"OpenAlex: "
+                f"{item['result']['openalex_score']}"
+            )
+
+            print(
+                f"Crossref: "
+                f"{item['result']['crossref_score']}"
+            )
+
+            print(
+                f"Matched Title: "
+                f"{item['result']['matched_title']}"
+            )
 
 
 if __name__ == "__main__":
