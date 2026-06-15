@@ -184,11 +184,6 @@ def print_report(report):
             )
 
             print(
-                f"Title similarity: "
-                f"{item['result']['title_similarity']}"
-            )
-
-            print(
                 f"OpenAlex: "
                 f"{item['result']['openalex_score']}"
             )
@@ -196,6 +191,16 @@ def print_report(report):
             print(
                 f"Crossref: "
                 f"{item['result']['crossref_score']}"
+            )
+
+            print(
+                f"Matched OpenAlex Title: "
+                f"{item['result']['matched_title']}"
+            )
+
+            print(
+                f"Matched Crossref Title: "
+                f"{item['result']['matched_crossref_title']}"
             )
 
     if report["possible_refs"]:
@@ -216,11 +221,6 @@ def print_report(report):
             )
 
             print(
-                f"Title similarity: "
-                f"{item['result']['title_similarity']}"
-            )
-
-            print(
                 f"OpenAlex: "
                 f"{item['result']['openalex_score']}"
             )
@@ -231,8 +231,40 @@ def print_report(report):
             )
 
             print(
-                f"Matched Title: "
+                f"Matched OpenAlex Title: "
                 f"{item['result']['matched_title']}"
+            )
+
+            print(
+                f"Matched Crossref Title: "
+                f"{item['result']['matched_crossref_title']}"
+            )
+
+    if report["flagged"]:
+
+        print()
+        print("=" * 60)
+        print("HIGH RISK REFERENCES")
+        print("=" * 60)
+
+        for item in report["flagged"]:
+
+            print()
+            print(
+                f"Reference: "
+                f"{item['reference']}"
+            )
+
+            print(
+                f"Risk Score: "
+                f"{item['risk_score']}"
+            )
+
+            print(
+                "Flags: "
+                + ", ".join(
+                    item["flags"]
+                )
             )
 
 
