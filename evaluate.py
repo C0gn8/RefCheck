@@ -1,4 +1,6 @@
 from pathlib import Path
+import csv
+import sys
 
 from bibliography_parser import split_references
 from verifier import verify_reference
@@ -33,7 +35,12 @@ def evaluate_file(filepath):
     verified_refs = []
     possible_refs = []
 
-    for i, reference in enumerate(references, start=1):
+    all_results = []
+
+    for i, reference in enumerate(
+        references,
+        start=1
+    ):
 
         print(
             f"Checking {i}/{len(references)}",
@@ -43,6 +50,11 @@ def evaluate_file(filepath):
         result = verify_reference(
             reference
         )
+
+        all_results.append({
+            "reference": reference,
+            "result": result
+        })
 
         total_risk += result[
             "risk_score"
@@ -138,8 +150,50 @@ def evaluate_file(filepath):
         "integrity_score": integrity_score,
         "flagged": flagged,
         "verified_refs": verified_refs,
-        "possible_refs": possible_refs
+        "possible_refs": possible_refs,
+        "all_results": all_results
     }
+
+
+def export_csv(report):
+
+    filename = "refcheck_results.csv"
+
+    with open(
+        filename,
+        "w",
+        newline="",
+        encoding="utf-8"
+    ) as f:
+
+        writer = csv.writer(f)
+
+        writer.writerow([
+            "reference",
+            "status",
+            "confidence",
+            "risk_score",
+            "risk_level"
+        ])
+
+        for item in report[
+            "all_results"
+        ]:
+
+            result = item["result"]
+
+            writer.writerow([
+                item["reference"],
+                result["status"],
+                result["confidence"],
+                result["risk_score"],
+                result["risk_level"]
+            ])
+
+    print()
+    print(
+        f"CSV exported: {filename}"
+    )
 
 
 def print_report(report):
@@ -154,121 +208,39 @@ def print_report(report):
     print(f"Possible: {report['possible_matches']}")
     print(f"Weak: {report['weak_matches']}")
     print(f"Suspicious: {report['suspicious']}")
-    print(f"Grey Literature: {report['grey_literature']}")
-
-    print()
     print(
-        f"Integrity Score: {report['integrity_score']}"
+        f"Grey Literature: "
+        f"{report['grey_literature']}"
     )
 
     print()
-    print(f"High Risk: {report['high_risk']}")
-    print(f"Medium Risk: {report['medium_risk']}")
-    print(f"Low Risk: {report['low_risk']}")
+    print(
+        f"Integrity Score: "
+        f"{report['integrity_score']}"
+    )
 
-    if report["verified_refs"]:
+    print()
+    print(
+        f"High Risk: "
+        f"{report['high_risk']}"
+    )
 
-        print()
-        print("=" * 60)
-        print("VERIFIED REFERENCES")
-        print("=" * 60)
+    print(
+        f"Medium Risk: "
+        f"{report['medium_risk']}"
+    )
 
-        for item in report["verified_refs"]:
-
-            print()
-            print(item["reference"])
-
-            print(
-                f"Confidence: "
-                f"{item['result']['confidence']}"
-            )
-
-            print(
-                f"OpenAlex: "
-                f"{item['result']['openalex_score']}"
-            )
-
-            print(
-                f"Crossref: "
-                f"{item['result']['crossref_score']}"
-            )
-
-            print(
-                f"Matched OpenAlex Title: "
-                f"{item['result']['matched_title']}"
-            )
-
-            print(
-                f"Matched Crossref Title: "
-                f"{item['result']['matched_crossref_title']}"
-            )
-
-    if report["possible_refs"]:
-
-        print()
-        print("=" * 60)
-        print("POSSIBLE MATCHES")
-        print("=" * 60)
-
-        for item in report["possible_refs"][:10]:
-
-            print()
-            print(item["reference"])
-
-            print(
-                f"Confidence: "
-                f"{item['result']['confidence']}"
-            )
-
-            print(
-                f"OpenAlex: "
-                f"{item['result']['openalex_score']}"
-            )
-
-            print(
-                f"Crossref: "
-                f"{item['result']['crossref_score']}"
-            )
-
-            print(
-                f"Matched OpenAlex Title: "
-                f"{item['result']['matched_title']}"
-            )
-
-            print(
-                f"Matched Crossref Title: "
-                f"{item['result']['matched_crossref_title']}"
-            )
-
-    if report["flagged"]:
-
-        print()
-        print("=" * 60)
-        print("HIGH RISK REFERENCES")
-        print("=" * 60)
-
-        for item in report["flagged"]:
-
-            print()
-            print(
-                f"Reference: "
-                f"{item['reference']}"
-            )
-
-            print(
-                f"Risk Score: "
-                f"{item['risk_score']}"
-            )
-
-            print(
-                "Flags: "
-                + ", ".join(
-                    item["flags"]
-                )
-            )
+    print(
+        f"Low Risk: "
+        f"{report['low_risk']}"
+    )
 
 
 if __name__ == "__main__":
+
+    csv_mode = (
+        "--csv" in sys.argv
+    )
 
     files = [
         "test_data/real_bibliography.txt",
@@ -287,6 +259,12 @@ if __name__ == "__main__":
             print_report(
                 report
             )
+
+            if csv_mode:
+
+                export_csv(
+                    report
+                )
 
         else:
 
