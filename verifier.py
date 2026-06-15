@@ -229,7 +229,7 @@ def score_crossref(result, parsed):
         + year_score * 0.1
     )
 
-    return confidence, title_score
+    return confidence, title_score, candidate_title
 
 
 def verify_reference(reference):
@@ -254,11 +254,13 @@ def verify_reference(reference):
 
     best_openalex = None
     best_openalex_score = 0
-    best_title_similarity = 0
+
+    best_crossref_score = 0
+    best_crossref_title = None
 
     for result in openalex_results:
 
-        score, similarity = score_openalex(
+        score, _ = score_openalex(
             result,
             parsed
         )
@@ -266,14 +268,11 @@ def verify_reference(reference):
         if score > best_openalex_score:
 
             best_openalex_score = score
-            best_title_similarity = similarity
             best_openalex = result
-
-    best_crossref_score = 0
 
     for result in crossref_results:
 
-        score, _ = score_crossref(
+        score, _, candidate_title = score_crossref(
             result,
             parsed
         )
@@ -281,6 +280,7 @@ def verify_reference(reference):
         if score > best_crossref_score:
 
             best_crossref_score = score
+            best_crossref_title = candidate_title
 
     confidence = max(
         best_openalex_score,
@@ -307,46 +307,51 @@ def verify_reference(reference):
         best_openalex_score < 70
         and best_crossref_score < 70
     ):
+
         status = "suspicious"
 
     elif (
         confidence >= 85
-        and best_title_similarity >= 85
         and (
             openalex_found
             or crossref_found
         )
     ):
+
         status = "verified"
 
     elif confidence >= 60:
+
         status = "possible_match"
 
     else:
+
         status = "weak_match"
 
     result = {
         "status": status,
+
         "confidence": round(
             confidence,
             2
         ),
+
         "parsed": parsed,
+
         "doi": parsed.get("doi"),
+
         "openalex_found": openalex_found,
         "openalex_score": round(
             best_openalex_score,
             2
         ),
+
         "crossref_found": crossref_found,
         "crossref_score": round(
             best_crossref_score,
             2
         ),
-        "title_similarity": round(
-            best_title_similarity,
-            2
-        ),
+
         "matched_title": (
             best_openalex.get(
                 "display_name"
@@ -354,6 +359,11 @@ def verify_reference(reference):
             if best_openalex
             else None
         ),
+
+        "matched_crossref_title": (
+            best_crossref_title
+        ),
+
         "openalex_id": (
             best_openalex.get(
                 "id"
