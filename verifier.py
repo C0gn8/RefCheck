@@ -37,11 +37,6 @@ def calculate_title_similarity(
         candidate_title
     )
 
-    # Weighted blend:
-    # 50% exact similarity
-    # 30% token similarity
-    # 20% partial similarity
-
     return (
         ratio_score * 0.5
         + token_score * 0.3
@@ -202,9 +197,9 @@ def score_openalex(
         year_score = 100
 
     confidence = (
-        title_score * 0.7
-        + author_score * 0.2
-        + year_score * 0.1
+        title_score * 0.85
+        + author_score * 0.10
+        + year_score * 0.05
     )
 
     return (
@@ -305,9 +300,9 @@ def score_crossref(
             year_score = 100
 
     confidence = (
-        title_score * 0.7
-        + author_score * 0.2
-        + year_score * 0.1
+        title_score * 0.85
+        + author_score * 0.10
+        + year_score * 0.05
     )
 
     return (
@@ -330,17 +325,13 @@ def verify_reference(
         or ""
     )
 
-    openalex_results = (
-        search_openalex(
-            title_search
-        )
+    openalex_results = search_openalex(
+        title_search
     )
 
-    crossref_results = (
-        search_crossref(
-            title_search,
-            parsed.get("doi")
-        )
+    crossref_results = search_crossref(
+        title_search,
+        parsed.get("doi")
     )
 
     best_openalex = None
@@ -396,18 +387,14 @@ def verify_reference(
         reference
     ):
 
-        status = (
-            "grey_literature"
-        )
+        status = "grey_literature"
 
     elif (
         best_openalex_score < 70
         and best_crossref_score < 70
     ):
 
-        status = (
-            "suspicious"
-        )
+        status = "suspicious"
 
     elif (
         confidence >= 85
@@ -417,21 +404,15 @@ def verify_reference(
         )
     ):
 
-        status = (
-            "verified"
-        )
+        status = "verified"
 
     elif confidence >= 60:
 
-        status = (
-            "possible_match"
-        )
+        status = "possible_match"
 
     else:
 
-        status = (
-            "weak_match"
-        )
+        status = "weak_match"
 
     result = {
 
