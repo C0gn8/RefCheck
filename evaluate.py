@@ -1,6 +1,5 @@
 from pathlib import Path
 import csv
-import sys
 import html
 
 from bibliography_parser import split_references
@@ -156,9 +155,10 @@ def evaluate_file(filepath):
     }
 
 
-def export_csv(report):
-
-    filename = "refcheck_results.csv"
+def export_csv(
+    report,
+    filename="refcheck_results.csv"
+):
 
     with open(
         filename,
@@ -197,9 +197,10 @@ def export_csv(report):
     )
 
 
-def export_html(report):
-
-    filename = "refcheck_report.html"
+def export_html(
+    report,
+    filename="refcheck_report.html"
+):
 
     html_content = f"""
 <!DOCTYPE html>
@@ -372,46 +373,11 @@ def print_report(report):
 
 if __name__ == "__main__":
 
-    csv_mode = (
-        "--csv" in sys.argv
+    print()
+    print(
+        "RefCheck evaluate.py loaded."
     )
 
-    html_mode = (
-        "--html" in sys.argv
+    print(
+        "Use refcheck.py to run analyses."
     )
-
-    files = [
-        "test_data/real_bibliography.txt",
-        "test_data/mixed_bibliography.txt",
-        "test_data/fake_bibliography.txt"
-    ]
-
-    for filepath in files:
-
-        if Path(filepath).exists():
-
-            report = evaluate_file(
-                filepath
-            )
-
-            print_report(
-                report
-            )
-
-            if csv_mode:
-
-                export_csv(
-                    report
-                )
-
-            if html_mode:
-
-                export_html(
-                    report
-                )
-
-        else:
-
-            print(
-                f"Missing: {filepath}"
-            )
