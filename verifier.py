@@ -38,9 +38,9 @@ def calculate_title_similarity(
     )
 
     return (
-        ratio_score * 0.5
-        + token_score * 0.3
-        + partial_score * 0.2
+        ratio_score * 0.3
+        + token_score * 0.2
+        + partial_score * 0.5
     )
 
 
