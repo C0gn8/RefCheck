@@ -20,6 +20,7 @@ def evaluate_file(filepath):
     possible = 0
     weak = 0
     suspicious = 0
+    grey_literature = 0
 
     high_risk = 0
     medium_risk = 0
@@ -52,7 +53,6 @@ def evaluate_file(filepath):
         if status == "verified":
 
             verified += 1
-
             verified_refs.append(
                 reference
             )
@@ -68,6 +68,10 @@ def evaluate_file(filepath):
         elif status == "suspicious":
 
             suspicious += 1
+
+        elif status == "grey_literature":
+
+            grey_literature += 1
 
         risk_level = result[
             "risk_level"
@@ -118,6 +122,7 @@ def evaluate_file(filepath):
         "possible_matches": possible,
         "weak_matches": weak,
         "suspicious": suspicious,
+        "grey_literature": grey_literature,
         "high_risk": high_risk,
         "medium_risk": medium_risk,
         "low_risk": low_risk,
@@ -131,52 +136,25 @@ def print_report(report):
 
     print()
     print("=" * 60)
-
-    print(
-        f"FILE: {report['file']}"
-    )
-
+    print(f"FILE: {report['file']}")
     print("=" * 60)
 
-    print(
-        f"References: {report['total']}"
-    )
-
-    print(
-        f"Verified: {report['verified']}"
-    )
-
-    print(
-        f"Possible: {report['possible_matches']}"
-    )
-
-    print(
-        f"Weak: {report['weak_matches']}"
-    )
-
-    print(
-        f"Suspicious: {report['suspicious']}"
-    )
+    print(f"References: {report['total']}")
+    print(f"Verified: {report['verified']}")
+    print(f"Possible: {report['possible_matches']}")
+    print(f"Weak: {report['weak_matches']}")
+    print(f"Suspicious: {report['suspicious']}")
+    print(f"Grey Literature: {report['grey_literature']}")
 
     print()
-
     print(
         f"Integrity Score: {report['integrity_score']}"
     )
 
     print()
-
-    print(
-        f"High Risk: {report['high_risk']}"
-    )
-
-    print(
-        f"Medium Risk: {report['medium_risk']}"
-    )
-
-    print(
-        f"Low Risk: {report['low_risk']}"
-    )
+    print(f"High Risk: {report['high_risk']}")
+    print(f"Medium Risk: {report['medium_risk']}")
+    print(f"Low Risk: {report['low_risk']}")
 
     if report["verified_refs"]:
 
@@ -189,31 +167,6 @@ def print_report(report):
 
             print()
             print(ref)
-
-    if report["flagged"]:
-
-        print()
-        print("=" * 60)
-        print("HIGH RISK REFERENCES")
-        print("=" * 60)
-
-        for item in report["flagged"]:
-
-            print()
-            print(
-                f"Reference: {item['reference']}"
-            )
-
-            print(
-                f"Risk Score: {item['risk_score']}"
-            )
-
-            print(
-                "Flags: "
-                + ", ".join(
-                    item["flags"]
-                )
-            )
 
 
 if __name__ == "__main__":
