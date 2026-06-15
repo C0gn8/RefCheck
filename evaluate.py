@@ -1,6 +1,7 @@
 from pathlib import Path
 import csv
 import sys
+import html
 
 from bibliography_parser import split_references
 from verifier import verify_reference
@@ -196,6 +197,139 @@ def export_csv(report):
     )
 
 
+def export_html(report):
+
+    filename = "refcheck_report.html"
+
+    html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>RefCheck Report</title>
+
+<style>
+
+body {{
+    font-family: Arial, sans-serif;
+    margin: 40px;
+}}
+
+h1 {{
+    color: #333;
+}}
+
+.summary {{
+    background: #f5f5f5;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}}
+
+table {{
+    border-collapse: collapse;
+    width: 100%;
+}}
+
+th, td {{
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}}
+
+th {{
+    background: #f0f0f0;
+}}
+
+.verified {{
+    color: green;
+    font-weight: bold;
+}}
+
+.possible_match {{
+    color: orange;
+    font-weight: bold;
+}}
+
+.suspicious {{
+    color: red;
+    font-weight: bold;
+}}
+
+.grey_literature {{
+    color: blue;
+    font-weight: bold;
+}}
+
+</style>
+</head>
+
+<body>
+
+<h1>RefCheck Report</h1>
+
+<div class="summary">
+
+<h2>Summary</h2>
+
+<p><strong>File:</strong> {report['file']}</p>
+<p><strong>References:</strong> {report['total']}</p>
+<p><strong>Verified:</strong> {report['verified']}</p>
+<p><strong>Possible:</strong> {report['possible_matches']}</p>
+<p><strong>Suspicious:</strong> {report['suspicious']}</p>
+<p><strong>Grey Literature:</strong> {report['grey_literature']}</p>
+<p><strong>Integrity Score:</strong> {report['integrity_score']}</p>
+
+</div>
+
+<h2>Reference Results</h2>
+
+<table>
+
+<tr>
+<th>Reference</th>
+<th>Status</th>
+<th>Confidence</th>
+<th>Risk Score</th>
+</tr>
+"""
+
+    for item in report["all_results"]:
+
+        result = item["result"]
+
+        html_content += f"""
+<tr>
+<td>{html.escape(item['reference'])}</td>
+<td class="{result['status']}">
+{result['status']}
+</td>
+<td>{result['confidence']}</td>
+<td>{result['risk_score']}</td>
+</tr>
+"""
+
+    html_content += """
+</table>
+
+</body>
+</html>
+"""
+
+    with open(
+        filename,
+        "w",
+        encoding="utf-8"
+    ) as f:
+
+        f.write(html_content)
+
+    print()
+    print(
+        f"HTML exported: {filename}"
+    )
+
+
 def print_report(report):
 
     print()
@@ -242,6 +376,10 @@ if __name__ == "__main__":
         "--csv" in sys.argv
     )
 
+    html_mode = (
+        "--html" in sys.argv
+    )
+
     files = [
         "test_data/real_bibliography.txt",
         "test_data/mixed_bibliography.txt",
@@ -263,6 +401,12 @@ if __name__ == "__main__":
             if csv_mode:
 
                 export_csv(
+                    report
+                )
+
+            if html_mode:
+
+                export_html(
                     report
                 )
 
