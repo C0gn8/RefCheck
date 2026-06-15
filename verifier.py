@@ -397,7 +397,7 @@ def verify_reference(
         status = "suspicious"
 
     elif (
-        confidence >= 85
+        confidence >= 80
         and (
             openalex_found
             or crossref_found
